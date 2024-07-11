@@ -2,7 +2,6 @@ package meilisearch
 
 import (
 	"context"
-	"strings"
 	"sync"
 
 	"github.com/hashicorp/vault/sdk/framework"
@@ -27,7 +26,6 @@ func backend() *meilisearchBackend {
 	var b = meilisearchBackend{}
 
 	b.Backend = &framework.Backend{
-		Help: strings.TrimSpace(backendHelp),
 		PathsSpecial: &logical.Paths{
 			LocalStorage: []string{},
 			SealWrapStorage: []string{
@@ -97,10 +95,3 @@ func (b *meilisearchBackend) getClient(ctx context.Context, s logical.Storage) (
 
 	return b.client, nil
 }
-
-// backendHelp should contain help information for the backend
-const backendHelp = `
-The HashiCups secrets backend dynamically generates user tokens.
-After mounting this backend, credentials to manage HashiCups user tokens
-must be configured with the "config/" endpoints.
-`

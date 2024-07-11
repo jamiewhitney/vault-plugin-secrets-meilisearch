@@ -16,15 +16,12 @@ const (
 	meilisearchTokenType = "hashicups_token"
 )
 
-// hashiCupsToken defines a secret for the HashiCups token
 type hashiCupsToken struct {
 	ApiKey  string `json:"api_key"`
 	TokenID string `json:"token_id"`
 	Token   string `json:"token"`
 }
 
-// hashiCupsToken defines a secret to store for a given role
-// and how it should be revoked or renewed.
 func (b *meilisearchBackend) meilisearchToken() *framework.Secret {
 	return &framework.Secret{
 		Type: meilisearchTokenType,
@@ -67,7 +64,7 @@ func (b *meilisearchBackend) tokenRevoke(ctx context.Context, req *logical.Reque
 	}
 
 	token := ""
-	tokenRaw, ok := req.Secret.InternalData["api_key"]
+	tokenRaw, ok := req.Secret.InternalData["token_id"]
 	if ok {
 		token, ok = tokenRaw.(string)
 		if !ok {
@@ -77,13 +74,13 @@ func (b *meilisearchBackend) tokenRevoke(ctx context.Context, req *logical.Reque
 	if err := b.deleteToken(ctx, client, token); err != nil {
 		return nil, err
 	}
-	return nil, fmt.Errorf("no user token workflow implemented")
+	return nil, nil
 }
 
 func (b *meilisearchBackend) deleteToken(ctx context.Context, c *meilisearchClient, token string) error {
 	response, err := c.DeleteKey(token)
 	if err != nil {
-		return errors.New("")
+		return fmt.Errorf("error deleting Meilisearch token: %w", err)
 	}
 
 	if response {

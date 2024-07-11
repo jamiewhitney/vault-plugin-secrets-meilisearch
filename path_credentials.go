@@ -25,9 +25,6 @@ func pathCredentials(b *meilisearchBackend) *framework.Path {
 			logical.UpdateOperation: &framework.PathOperation{
 				Callback: b.pathConfigRead,
 			},
-			logical.RevokeOperation: &framework.PathOperation{
-				Callback: b.pathCredentialsRevoke,
-			},
 		},
 	}
 }
