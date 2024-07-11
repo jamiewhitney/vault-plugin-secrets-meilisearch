@@ -1,4 +1,4 @@
-package secretsengine
+package meilisearch
 
 import (
 	"context"
@@ -18,7 +18,6 @@ const (
 
 // hashiCupsToken defines a secret for the HashiCups token
 type hashiCupsToken struct {
-	UserID  int    `json:"user_id"`
 	ApiKey  string `json:"api_key"`
 	TokenID string `json:"token_id"`
 	Token   string `json:"token"`
@@ -41,22 +40,21 @@ func (b *meilisearchBackend) meilisearchToken() *framework.Secret {
 }
 
 func createToken(ctx context.Context, c *meilisearchClient, username *meilisearchRoleEntry) (*hashiCupsToken, error) {
+	tokenID := uuid.New().String()
 	response, err := c.CreateKey(&meilisearch.Key{
-		Name:      username.TokenID,
+		Name:      fmt.Sprintf("vault-%s", tokenID),
+		UID:       tokenID,
 		Actions:   username.Actions,
 		Indexes:   username.Indexes,
-		CreatedAt: time.Time{},
-		UpdatedAt: time.Time{},
-		ExpiresAt: time.Time{},
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
 	})
 	if err != nil {
-		return nil, fmt.Errorf("error creating HashiCups token: %w", err)
+		return nil, fmt.Errorf("error creating Meilisearch token: %w", err)
 	}
 
-	tokenID := uuid.New().String()
-
 	return &hashiCupsToken{
-		ApiKey:  response.UID,
+		ApiKey:  response.Key,
 		TokenID: tokenID,
 	}, nil
 }
@@ -76,7 +74,6 @@ func (b *meilisearchBackend) tokenRevoke(ctx context.Context, req *logical.Reque
 			return nil, fmt.Errorf("invalid value for token in secret internal data")
 		}
 	}
-
 	if err := b.deleteToken(ctx, client, token); err != nil {
 		return nil, err
 	}

@@ -1,8 +1,7 @@
-package secretsengine
+package meilisearch
 
 import (
 	"context"
-	"fmt"
 	"strings"
 	"sync"
 
@@ -10,7 +9,6 @@ import (
 	"github.com/hashicorp/vault/sdk/logical"
 )
 
-// Factory returns a new backend as logical.Backend
 func Factory(ctx context.Context, conf *logical.BackendConfig) (logical.Backend, error) {
 	b := backend()
 	if err := b.Setup(ctx, conf); err != nil {
@@ -19,18 +17,12 @@ func Factory(ctx context.Context, conf *logical.BackendConfig) (logical.Backend,
 	return b, nil
 }
 
-// meilisearchBackend defines an object that
-// extends the Vault backend and stores the
-// target API's client.
 type meilisearchBackend struct {
 	*framework.Backend
 	lock   sync.RWMutex
 	client *meilisearchClient
 }
 
-// backend defines the target API backend
-// for Vault. It must include each path
-// and the secrets it will store.
 func backend() *meilisearchBackend {
 	var b = meilisearchBackend{}
 
@@ -47,6 +39,7 @@ func backend() *meilisearchBackend {
 			pathRole(&b),
 			[]*framework.Path{
 				pathConfig(&b),
+				pathCredentials(&b),
 			}),
 		Secrets: []*framework.Secret{
 			b.meilisearchToken(),
@@ -102,7 +95,7 @@ func (b *meilisearchBackend) getClient(ctx context.Context, s logical.Storage) (
 		return nil, err
 	}
 
-	return nil, fmt.Errorf("need to return client")
+	return b.client, nil
 }
 
 // backendHelp should contain help information for the backend

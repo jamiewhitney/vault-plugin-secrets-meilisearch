@@ -3,6 +3,7 @@ module github.com/jamiewhitney/vault-plugin-secrets-meilisearch
 go 1.20
 
 require (
+	github.com/google/uuid v1.1.2
 	github.com/hashicorp/go-hclog v1.5.0
 	github.com/hashicorp/vault/api v1.9.0
 	github.com/hashicorp/vault/sdk v0.8.1

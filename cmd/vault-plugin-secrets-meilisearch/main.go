@@ -18,7 +18,7 @@ func main() {
 	tlsProviderFunc := api.VaultPluginTLSProvider(tlsConfig)
 
 	err := plugin.Serve(&plugin.ServeOpts{
-		BackendFactoryFunc: secretsengine.Factory,
+		BackendFactoryFunc: meilisearch.Factory,
 		TLSProviderFunc:    tlsProviderFunc,
 	})
 	if err != nil {

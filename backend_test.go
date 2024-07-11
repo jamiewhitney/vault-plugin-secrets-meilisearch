@@ -1,4 +1,4 @@
-package secretsengine
+package meilisearch
 
 import (
 	"context"
@@ -10,7 +10,6 @@ import (
 
 const (
 	apiKey = "MASTER_KEY"
-	url    = "http://localhost:7700"
 )
 
 func getTestBackend(tb testing.TB) (*meilisearchBackend, logical.Storage) {
@@ -29,7 +28,7 @@ func getTestBackend(tb testing.TB) (*meilisearchBackend, logical.Storage) {
 	return b.(*meilisearchBackend), config.StorageView
 }
 
-func TestConfig(t *testing.T) {
+func TestBackendConfig(t *testing.T) {
 	b, reqStorage := getTestBackend(t)
 
 	t.Run("Test Configuration", func(t *testing.T) {
@@ -40,47 +39,30 @@ func TestConfig(t *testing.T) {
 
 		assert.NoError(t, err)
 
-		//err = testConfigRead(t, b, reqStorage, map[string]interface{}{
-		//	"api_key": apiKey,
-		//	"url":     url,
-		//})
-		//
-		//assert.NoError(t, err)
-		//
-		//err = testConfigUpdate(t, b, reqStorage, map[string]interface{}{
-		//	"api_key": apiKey,
-		//	"url":     "http://hashicups:19090",
-		//})
-		//
-		//assert.NoError(t, err)
-		//
-		//err = testConfigRead(t, b, reqStorage, map[string]interface{}{
-		//	"api_key": apiKey,
-		//	"url":     "http://hashicups:19090",
-		//})
+		err = testConfigCreate(t, b, reqStorage, map[string]interface{}{
+			"api_key": apiKey,
+			"url":     url,
+		})
 
 		assert.NoError(t, err)
 
-		//err = testConfigDelete(t, b, reqStorage)
-
-		assert.NoError(t, err)
 	})
 }
 
-//func testConfigCreate(t *testing.T, b logical.Backend, s logical.Storage, d map[string]interface{}) error {
-//	resp, err := b.HandleRequest(context.Background(), &logical.Request{
-//		Operation: logical.CreateOperation,
-//		Path:      configStoragePath,
-//		Data:      d,
-//		Storage:   s,
-//	})
-//
-//	if err != nil {
-//		return err
-//	}
-//
-//	if resp != nil && resp.IsError() {
-//		return resp.Error()
-//	}
-//	return nil
-//}
+func testBackendConfigCreate(t *testing.T, b logical.Backend, s logical.Storage, d map[string]interface{}) error {
+	resp, err := b.HandleRequest(context.Background(), &logical.Request{
+		Operation: logical.CreateOperation,
+		Path:      configStoragePath,
+		Data:      d,
+		Storage:   s,
+	})
+
+	if err != nil {
+		return err
+	}
+
+	if resp != nil && resp.IsError() {
+		return resp.Error()
+	}
+	return nil
+}

@@ -1,4 +1,4 @@
-package secretsengine
+package meilisearch
 
 import (
 	"context"
@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	roleName   = "testhashicups"
+	roleName   = "testmeilisearch"
 	testTTL    = int64(120)
 	testMaxTTL = int64(3600)
 )
@@ -22,7 +22,9 @@ func TestUserRole(t *testing.T) {
 			_, err := testTokenRoleCreate(t, b, s,
 				roleName+strconv.Itoa(i),
 				map[string]interface{}{
-					"api_key": apiKey,
+					"name":    roleName,
+					"indexes": []string{"*"},
+					"actions": []string{"search"},
 					"ttl":     testTTL,
 					"max_ttl": testMaxTTL,
 				})
@@ -36,11 +38,12 @@ func TestUserRole(t *testing.T) {
 
 	t.Run("Create User Role - pass", func(t *testing.T) {
 		resp, err := testTokenRoleCreate(t, b, s, roleName, map[string]interface{}{
-			"api_key": apiKey,
+			"name":    roleName,
+			"indexes": []string{"*"},
+			"actions": []string{"search"},
 			"ttl":     testTTL,
 			"max_ttl": testMaxTTL,
 		})
-
 		require.Nil(t, err)
 		require.Nil(t, resp.Error())
 		require.Nil(t, resp)
@@ -48,14 +51,14 @@ func TestUserRole(t *testing.T) {
 
 	t.Run("Read User Role", func(t *testing.T) {
 		resp, err := testTokenRoleRead(t, b, s)
-
 		require.Nil(t, err)
 		require.Nil(t, resp.Error())
 		require.NotNil(t, resp)
-		require.Equal(t, resp.Data["api_key"], apiKey)
+		require.Equal(t, resp.Data["actions"], []string{"search"})
 	})
 	t.Run("Update User Role", func(t *testing.T) {
 		resp, err := testTokenRoleUpdate(t, b, s, map[string]interface{}{
+			"actions": []string{"documents.get"},
 			"ttl":     "1m",
 			"max_ttl": "5h",
 		})
@@ -71,7 +74,7 @@ func TestUserRole(t *testing.T) {
 		require.Nil(t, err)
 		require.Nil(t, resp.Error())
 		require.NotNil(t, resp)
-		require.Equal(t, resp.Data["api_key"], apiKey)
+		require.Equal(t, resp.Data["actions"], []string{"documents.get"})
 	})
 
 	t.Run("Delete User Role", func(t *testing.T) {

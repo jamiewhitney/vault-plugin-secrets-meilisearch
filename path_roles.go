@@ -1,4 +1,4 @@
-package secretsengine
+package meilisearch
 
 import (
 	"context"
@@ -9,28 +9,22 @@ import (
 	"github.com/hashicorp/vault/sdk/logical"
 )
 
-// hashiCupsRoleEntry defines the data required
-// for a Vault role to access and call the HashiCups
-// token endpoints
 type meilisearchRoleEntry struct {
-	apiKey  string        `json:"api_key"`
-	UserID  int           `json:"user_id"`
-	Token   string        `json:"token"`
-	TokenID string        `json:"token_id"`
+	Name    string        `json:"name"`
+	Indexes []string      `json:"indexes"`
+	Actions []string      `json:"actions"`
 	TTL     time.Duration `json:"ttl"`
 	MaxTTL  time.Duration `json:"max_ttl"`
-	Indexes []string      `json:"index"`
-	Actions []string      `json:"actions"`
 }
 
 // toResponseData returns response data for a role
 func (r *meilisearchRoleEntry) toResponseData() map[string]interface{} {
 	respData := map[string]interface{}{
-		"ttl":     r.TTL.Seconds(),
-		"max_ttl": r.MaxTTL.Seconds(),
-		"api_key": r.apiKey,
+		"name":    r.Name,
 		"indexes": r.Indexes,
 		"actions": r.Actions,
+		"ttl":     r.TTL.Seconds(),
+		"max_ttl": r.MaxTTL.Seconds(),
 	}
 	return respData
 }
@@ -50,9 +44,15 @@ func pathRole(b *meilisearchBackend) []*framework.Path {
 					Description: "Name of the role",
 					Required:    true,
 				},
-				"api_key": {
-					Type:        framework.TypeString,
-					Description: "The username for the HashiCups product API",
+				"indexes": {
+					Type:        framework.TypeStringSlice,
+					Description: "An array of indexes the key is authorized to act on. [\"*\"] for all indexes",
+					Required:    false,
+					Default:     []string{"*"},
+				},
+				"actions": {
+					Type:        framework.TypeStringSlice,
+					Description: "A list of API actions permitted for the key. [\"*\"] for all actions",
 					Required:    true,
 				},
 				"ttl": {
@@ -62,7 +62,7 @@ func pathRole(b *meilisearchBackend) []*framework.Path {
 				"max_ttl": {
 					Type:        framework.TypeDurationSecond,
 					Description: "Maximum time for role. If not set or set to 0, will use system default.",
-				},``
+				},
 			},
 			Operations: map[logical.Operation]framework.OperationHandler{
 				logical.ReadOperation: &framework.PathOperation{
@@ -165,10 +165,16 @@ func (b *meilisearchBackend) pathRolesWrite(ctx context.Context, req *logical.Re
 
 	createOperation := req.Operation == logical.CreateOperation
 
-	if username, ok := d.GetOk("api_key"); ok {
-		roleEntry.apiKey = username.(string)
+	if actions, ok := d.GetOk("actions"); ok {
+		roleEntry.Actions = actions.([]string)
 	} else if !ok && createOperation {
-		return nil, fmt.Errorf("missing api_key in role")
+		return nil, fmt.Errorf("missing actions in role")
+	}
+
+	if indexes, ok := d.GetOk("indexes"); ok {
+		roleEntry.Indexes = indexes.([]string)
+	} else if createOperation {
+		roleEntry.Indexes = []string{"*"}
 	}
 
 	if ttlRaw, ok := d.GetOk("ttl"); ok {

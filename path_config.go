@@ -1,4 +1,4 @@
-package secretsengine
+package meilisearch
 
 import (
 	"context"
@@ -16,7 +16,7 @@ const (
 // hashiCupsConfig includes the minimum configuration
 // required to instantiate a new HashiCups client.
 type meilisearchConfig struct {
-	apiKey string `json:"api_key"`
+	ApiKey string `json:"api_key"`
 	URL    string `json:"url"`
 }
 
@@ -102,10 +102,9 @@ func (b *meilisearchBackend) pathConfigRead(ctx context.Context, req *logical.Re
 	if err != nil {
 		return nil, err
 	}
-
 	return &logical.Response{
 		Data: map[string]interface{}{
-			"api_key": config.apiKey,
+			"api_key": config.ApiKey,
 			"url":     config.URL,
 		},
 	}, nil
@@ -133,7 +132,7 @@ func (b *meilisearchBackend) pathConfigWrite(ctx context.Context, req *logical.R
 	}
 
 	if apiKey, ok := data.GetOk("api_key"); ok {
-		config.URL = apiKey.(string)
+		config.ApiKey = apiKey.(string)
 	} else if !ok && createOperation {
 		return nil, fmt.Errorf("missing API Key in configuration")
 	}

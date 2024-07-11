@@ -1,7 +1,8 @@
-package secretsengine
+package meilisearch
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/hashicorp/vault/sdk/framework"
 	"github.com/hashicorp/vault/sdk/logical"
@@ -17,7 +18,17 @@ func pathCredentials(b *meilisearchBackend) *framework.Path {
 				Required:    true,
 			},
 		},
-		Callbacks: map[logical.Operation]framework.OperationFunc{},
+		Operations: map[logical.Operation]framework.OperationHandler{
+			logical.ReadOperation: &framework.PathOperation{
+				Callback: b.pathCredentialsRead,
+			},
+			logical.UpdateOperation: &framework.PathOperation{
+				Callback: b.pathConfigRead,
+			},
+			logical.RevokeOperation: &framework.PathOperation{
+				Callback: b.pathCredentialsRevoke,
+			},
+		},
 	}
 }
 
@@ -35,8 +46,47 @@ func (b *meilisearchBackend) createToken(ctx context.Context, s logical.Storage,
 	}
 
 	if token == nil {
-		return nil, errors.New("error creating HashiCups token")
+		return nil, fmt.Errorf("error creating HashiCups token")
 	}
 
 	return token, nil
+}
+func (b *meilisearchBackend) createApiKey(ctx context.Context, req *logical.Request, role *meilisearchRoleEntry) (*logical.Response, error) {
+	token, err := b.createToken(ctx, req.Storage, role)
+	if err != nil {
+		return nil, err
+	}
+	resp := b.Secret(meilisearchTokenType).Response(map[string]interface{}{
+		"token":    token.Token,
+		"token_id": token.TokenID,
+		"api_key":  token.ApiKey,
+	}, map[string]interface{}{
+		"token": token.Token,
+		"role":  role.Name,
+	})
+
+	if role.TTL > 0 {
+		resp.Secret.TTL = role.TTL
+	}
+
+	if role.MaxTTL > 0 {
+		resp.Secret.MaxTTL = role.MaxTTL
+	}
+
+	return resp, nil
+}
+
+func (b *meilisearchBackend) pathCredentialsRead(ctx context.Context, req *logical.Request, d *framework.FieldData) (*logical.Response, error) {
+	roleName := d.Get("name").(string)
+
+	roleEntry, err := b.getRole(ctx, req.Storage, roleName)
+	if err != nil {
+		return nil, fmt.Errorf("error retrieving role: %w", err)
+	}
+
+	if roleEntry == nil {
+		return nil, errors.New("error retrieving role: role is nil")
+	}
+
+	return b.createApiKey(ctx, req, roleEntry)
 }
