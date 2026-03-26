@@ -1,0 +1,22 @@
+services:
+  meilisearch:
+    image: getmeili/meilisearch:latest
+    ports:
+      - "7700:7700"
+    environment:
+      MEILI_MASTER_KEY: "test-master-key"
+
+  vault:
+    image: hashicorp/vault:latest
+    ports:
+      - "8200:8200"
+    environment:
+      VAULT_DEV_ROOT_TOKEN_ID: "root"
+      VAULT_DEV_LISTEN_ADDRESS: "0.0.0.0:8200"
+    cap_add:
+      - IPC_LOCK
+    volumes:
+      - ./vault-plugin-meilisearch:/vault/plugins/vault-plugin-meilisearch
+    command: vault server -dev -dev-plugin-dir=/vault/plugins
+    depends_on:
+      - meilisearch
